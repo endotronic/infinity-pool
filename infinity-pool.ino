@@ -21,7 +21,7 @@ struct CRGB
 
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, 6, NEO_GRB + NEO_KHZ800);
-CRGB c1_b, c2_b, c3_b, strip1[NUM_LEDS], strip2[NUM_LEDS];
+CRGB c1_b, c2_b, c3_b;
 uint8_t offset = 0;
 
 void setup() {
@@ -34,30 +34,33 @@ void setup() {
 }
 
 void loop() {
-  CRGB c1_e = CRGB(random(0, 160), random(0, 120), random(0, 120));
-  CRGB c2_e = CRGB(random(0, 120), random(0, 160), random(0, 120));
-  CRGB c3_e = CRGB(random(0, 120), random(0, 120), random(0, 160));
-  fillBuffer(strip1, c1_b, c2_b, c3_b);
-  fillBuffer(strip2, c1_e, c2_e, c3_e);
+  CRGB c1_e = CRGB(random(0, 255), random(0, 160), random(0, 160));
+  CRGB c2_e = CRGB(random(0, 160), random(0, 255), random(0, 160));
+  CRGB c3_e = CRGB(random(0, 160), random(0, 160), random(0, 255));
+  CRGB c1, c2;
 
   for (uint8_t fade = 0; fade < 255; fade++) {
-  for (uint8_t betweenFades = 0; betweenFades < 5; betweenFades++) {
-    for (uint8_t i = 0; i < strip.numPixels(); i++) {
+    for (uint8_t betweenFades = 0; betweenFades < 5; betweenFades++) {
+      for (uint8_t i = 0; i < strip.numPixels(); i++) {
+        c1 = getColorInGradient(i, c1_b, c2_b, c3_b);
+        c1 = getColorInGradient(i, c1_e, c2_e, c3_e);
+
         strip.setPixelColor((i + offset) % NUM_LEDS,
-          blend(strip1[i].r, strip2[i].r, fade),
-          blend(strip1[i].g, strip2[i].g, fade),
-          blend(strip1[i].b, strip2[i].b, fade));
-    }
+          blend(c1.r, c2.r, fade),
+          blend(c1.g, c2.g, fade),
+          blend(c1.b, c2.b, fade));
+      }
 
-    strip.show();
-    delay(10);
+      strip.show();
+      delay(0);
 
-    if (++offset > NUM_LEDS) {
-      offset = 0;
+      if (++offset > NUM_LEDS) {
+        offset = 0;
+      }
     }
   }
-  }
 
+  // After reaching the end of the fade, the end becomes the beginning
   c1_b = c1_e;
   c2_b = c2_e;
   c3_b = c3_e;
@@ -65,22 +68,25 @@ void loop() {
 
 void fillBuffer(struct CRGB *buffer, struct CRGB c1, struct CRGB c2, struct CRGB c3) {
   for (uint16_t led = 0; led < NUM_LEDS; led++) {
-    if (led < THIRD) {
-      buffer->r = (((THIRD - 1 - led) * c1.r) / THIRD) + ((led * c2.r) / THIRD);
-      buffer->g = (((THIRD - 1 - led) * c1.g) / THIRD) + ((led * c2.g) / THIRD);
-      buffer->b = (((THIRD - 1 - led) * c1.b) / THIRD) + ((led * c2.b) / THIRD);
-      buffer++;
-    } else if (led < TWO_THIRDS) {
-      buffer->r = (((TWO_THIRDS - 1 - led) * c2.r) / THIRD) + (((led - THIRD) * c3.r) / THIRD);
-      buffer->g = (((TWO_THIRDS - 1 - led) * c2.g) / THIRD) + (((led - THIRD) * c3.g) / THIRD);
-      buffer->b = (((TWO_THIRDS - 1 - led) * c2.b) / THIRD) + (((led - THIRD) * c3.b) / THIRD);
-      buffer++;
-    } else {
-      buffer->r = (((NUM_LEDS - 1 - led) * c3.r) / THIRD) + (((led - TWO_THIRDS) * c1.r) / THIRD);
-      buffer->g = (((NUM_LEDS - 1 - led) * c3.g) / THIRD) + (((led - TWO_THIRDS) * c1.g) / THIRD);
-      buffer->b = (((NUM_LEDS - 1 - led) * c3.b) / THIRD) + (((led - TWO_THIRDS) * c1.b) / THIRD);
-      buffer++;
-    }
+    buffer[led] = getColorInGradient(led, c1, c2, c3);
+  }
+}
+
+struct CRGB getColorInGradient(uint16_t led, struct CRGB c1, struct CRGB c2, struct CRGB c3) {
+  CRGB color;
+
+  if (led < THIRD) {
+    color.r = (((THIRD - 1 - led) * c1.r) / THIRD) + ((led * c2.r) / THIRD);
+    color.g = (((THIRD - 1 - led) * c1.g) / THIRD) + ((led * c2.g) / THIRD);
+    color.b = (((THIRD - 1 - led) * c1.b) / THIRD) + ((led * c2.b) / THIRD);
+  } else if (led < TWO_THIRDS) {
+    color.r = (((TWO_THIRDS - 1 - led) * c2.r) / THIRD) + (((led - THIRD) * c3.r) / THIRD);
+    color.g = (((TWO_THIRDS - 1 - led) * c2.g) / THIRD) + (((led - THIRD) * c3.g) / THIRD);
+    color.b = (((TWO_THIRDS - 1 - led) * c2.b) / THIRD) + (((led - THIRD) * c3.b) / THIRD);
+  } else {
+    color.r = (((NUM_LEDS - 1 - led) * c3.r) / THIRD) + (((led - TWO_THIRDS) * c1.r) / THIRD);
+    color.g = (((NUM_LEDS - 1 - led) * c3.g) / THIRD) + (((led - TWO_THIRDS) * c1.g) / THIRD);
+    color.b = (((NUM_LEDS - 1 - led) * c3.b) / THIRD) + (((led - TWO_THIRDS) * c1.b) / THIRD);
   }
 }
 
