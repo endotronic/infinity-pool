@@ -22,7 +22,7 @@ struct CRGB
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, 6, NEO_GRB + NEO_KHZ800);
 CRGB c1_b, c2_b, c3_b;
-uint8_t offset = 0;
+uint16_t offset = 0;
 
 void setup() {
   strip.begin();
@@ -40,23 +40,19 @@ void loop() {
   CRGB c1, c2;
 
   for (uint8_t fade = 0; fade < 255; fade++) {
-    for (uint8_t betweenFades = 0; betweenFades < 5; betweenFades++) {
-      for (uint8_t i = 0; i < strip.numPixels(); i++) {
-        c1 = getColorInGradient(i, c1_b, c2_b, c3_b);
-        c1 = getColorInGradient(i, c1_e, c2_e, c3_e);
+    for (uint16_t i = 0; i < NUM_LEDS; i++) {
+      c1 = getColorInGradient(i, c1_b, c2_b, c3_b);
+      c2 = getColorInGradient(i, c1_e, c2_e, c3_e);
 
-        strip.setPixelColor((i + offset) % NUM_LEDS,
-          blend(c1.r, c2.r, fade),
-          blend(c1.g, c2.g, fade),
-          blend(c1.b, c2.b, fade));
-      }
+      strip.setPixelColor((i + offset) % NUM_LEDS,
+        blend(c1.r, c2.r, fade),
+        blend(c1.g, c2.g, fade),
+        blend(c1.b, c2.b, fade));
+    }
 
-      strip.show();
-      delay(0);
-
-      if (++offset > NUM_LEDS) {
-        offset = 0;
-      }
+    strip.show();
+    if (++offset > NUM_LEDS) {
+      offset = 0;
     }
   }
 
@@ -88,6 +84,8 @@ struct CRGB getColorInGradient(uint16_t led, struct CRGB c1, struct CRGB c2, str
     color.g = (((NUM_LEDS - 1 - led) * c3.g) / THIRD) + (((led - TWO_THIRDS) * c1.g) / THIRD);
     color.b = (((NUM_LEDS - 1 - led) * c3.b) / THIRD) + (((led - TWO_THIRDS) * c1.b) / THIRD);
   }
+
+  return color;
 }
 
 uint8_t blend(uint8_t c1, uint8_t c2, uint8_t fade) {
