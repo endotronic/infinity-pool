@@ -1,7 +1,17 @@
 #include <Adafruit_NeoPixel.h>
-#define NUM_LEDS 324
-#define THIRD NUM_LEDS/3
-#define TWO_THIRDS 2*THIRD
+
+#define BIG_POOL
+
+#ifdef BIG_POOL
+#define NUM_STRIPS 2
+#define NUM_LEDS_PER_STRIP 380
+#else
+#define NUM_STRIPS 1
+#define NUM_LEDS_PER_STRIP 324
+#endif
+
+#define THIRD NUM_LEDS_PER_STRIP / 3
+#define TWO_THIRDS 2 * THIRD
 
 struct CRGB
 {
@@ -20,13 +30,18 @@ struct CRGB
 };
 
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, 6, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel *strip[NUM_STRIPS];
 CRGB c1_b, c2_b, c3_b;
 uint16_t offset = 0;
 
 void setup() {
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  for (uint8_t i = 0; i < NUM_STRIPS; i++) {
+    strip[i] = new Adafruit_NeoPixel(NUM_LEDS_PER_STRIP, 6, NEO_GRB + NEO_KHZ800);
+    if (strip[i]) {
+      strip[i]->begin();
+      strip[i]->show(); // Initialize all pixels to 'off'
+    }
+  }
 
   c1_b = CRGB(255, 0, 0);
   c2_b = CRGB(0, 255, 0);
@@ -40,18 +55,34 @@ void loop() {
   CRGB c1, c2;
 
   for (uint8_t fade = 0; fade < 255; fade++) {
-    for (uint16_t i = 0; i < NUM_LEDS; i++) {
+    for (uint16_t i = 0; i < NUM_LEDS_PER_STRIP; i++) {
       c1 = getColorInGradient(i, c1_b, c2_b, c3_b);
       c2 = getColorInGradient(i, c1_e, c2_e, c3_e);
 
-      strip.setPixelColor((i + offset) % NUM_LEDS,
-        blend(c1.r, c2.r, fade),
-        blend(c1.g, c2.g, fade),
-        blend(c1.b, c2.b, fade));
+      for (uint8_t s = 0; s < NUM_STRIPS; s++) {
+        uint16_t loc;
+        if (s % 2 == 0) {
+          loc = (i + offset) % NUM_LEDS_PER_STRIP;
+        } else {
+          loc = NUM_LEDS_PER_STRIP - ((i + offset) % NUM_LEDS_PER_STRIP);
+        }
+
+        if (strip[s]) {
+          strip[s]->setPixelColor(loc,
+            blend(c1.r, c2.r, fade),
+            blend(c1.g, c2.g, fade),
+            blend(c1.b, c2.b, fade));
+        }
+      }
     }
 
-    strip.show();
-    if (++offset > NUM_LEDS) {
+    for (uint8_t s = 0; s < NUM_STRIPS; s++) {
+      if (strip[s]) {
+        strip[s]->show();
+      }
+    }
+
+    if (++offset > NUM_LEDS_PER_STRIP) {
       offset = 0;
     }
   }
@@ -63,7 +94,7 @@ void loop() {
 }
 
 void fillBuffer(struct CRGB *buffer, struct CRGB c1, struct CRGB c2, struct CRGB c3) {
-  for (uint16_t led = 0; led < NUM_LEDS; led++) {
+  for (uint16_t led = 0; led < NUM_LEDS_PER_STRIP; led++) {
     buffer[led] = getColorInGradient(led, c1, c2, c3);
   }
 }
@@ -80,9 +111,9 @@ struct CRGB getColorInGradient(uint16_t led, struct CRGB c1, struct CRGB c2, str
     color.g = (((TWO_THIRDS - 1 - led) * c2.g) / THIRD) + (((led - THIRD) * c3.g) / THIRD);
     color.b = (((TWO_THIRDS - 1 - led) * c2.b) / THIRD) + (((led - THIRD) * c3.b) / THIRD);
   } else {
-    color.r = (((NUM_LEDS - 1 - led) * c3.r) / THIRD) + (((led - TWO_THIRDS) * c1.r) / THIRD);
-    color.g = (((NUM_LEDS - 1 - led) * c3.g) / THIRD) + (((led - TWO_THIRDS) * c1.g) / THIRD);
-    color.b = (((NUM_LEDS - 1 - led) * c3.b) / THIRD) + (((led - TWO_THIRDS) * c1.b) / THIRD);
+    color.r = (((NUM_LEDS_PER_STRIP - 1 - led) * c3.r) / THIRD) + (((led - TWO_THIRDS) * c1.r) / THIRD);
+    color.g = (((NUM_LEDS_PER_STRIP - 1 - led) * c3.g) / THIRD) + (((led - TWO_THIRDS) * c1.g) / THIRD);
+    color.b = (((NUM_LEDS_PER_STRIP - 1 - led) * c3.b) / THIRD) + (((led - TWO_THIRDS) * c1.b) / THIRD);
   }
 
   return color;
