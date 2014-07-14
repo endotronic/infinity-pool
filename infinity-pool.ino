@@ -36,7 +36,7 @@ uint16_t offset = 0;
 
 void setup() {
   for (uint8_t i = 0; i < NUM_STRIPS; i++) {
-    strip[i] = new Adafruit_NeoPixel(NUM_LEDS_PER_STRIP, 6, NEO_GRB + NEO_KHZ800);
+    strip[i] = new Adafruit_NeoPixel(NUM_LEDS_PER_STRIP, 7 - i, NEO_GRB + NEO_KHZ800);
     if (strip[i]) {
       strip[i]->begin();
       strip[i]->show(); // Initialize all pixels to 'off'
@@ -60,12 +60,12 @@ void loop() {
       c2 = getColorInGradient(i, c1_e, c2_e, c3_e);
 
       for (uint8_t s = 0; s < NUM_STRIPS; s++) {
-        uint16_t loc;
-        if (s % 2 == 0) {
+        uint16_t loc = (i + offset) % NUM_LEDS_PER_STRIP;
+        /*if (s % 2 == 8) {
           loc = (i + offset) % NUM_LEDS_PER_STRIP;
         } else {
           loc = NUM_LEDS_PER_STRIP - ((i + offset) % NUM_LEDS_PER_STRIP);
-        }
+        }*/
 
         if (strip[s]) {
           strip[s]->setPixelColor(loc,
