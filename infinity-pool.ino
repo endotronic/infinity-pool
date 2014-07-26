@@ -1,13 +1,20 @@
 #include <Adafruit_NeoPixel.h>
 
-#define BIG_POOL
+#define MINFINITY
 
 #ifdef BIG_POOL
 #define NUM_STRIPS 2
 #define NUM_LEDS_PER_STRIP 380
-#else
+#endif
+
+#ifdef SMALL_POOL
 #define NUM_STRIPS 1
 #define NUM_LEDS_PER_STRIP 324
+#endif
+
+#ifdef MINFINITY
+#define NUM_STRIPS 1
+#define NUM_LEDS_PER_STRIP 120
 #endif
 
 #define THIRD NUM_LEDS_PER_STRIP / 3
@@ -31,12 +38,12 @@ struct CRGB
 
 
 Adafruit_NeoPixel *strip[NUM_STRIPS];
-CRGB c1_b, c2_b, c3_b;
+CRGB c1_b, c2_b, c3_b, c1_e, c2_e, c3_e, c1, c2;
 uint16_t offset = 0;
 
 void setup() {
   for (uint8_t i = 0; i < NUM_STRIPS; i++) {
-    strip[i] = new Adafruit_NeoPixel(NUM_LEDS_PER_STRIP, 7 - i, NEO_GRB + NEO_KHZ800);
+    strip[i] = new Adafruit_NeoPixel(NUM_LEDS_PER_STRIP, 6 + i, NEO_GRB + NEO_KHZ800);
     if (strip[i]) {
       strip[i]->begin();
       strip[i]->show(); // Initialize all pixels to 'off'
@@ -46,13 +53,15 @@ void setup() {
   c1_b = CRGB(255, 0, 0);
   c2_b = CRGB(0, 255, 0);
   c3_b = CRGB(0, 0, 255);
+
+  pinMode(8, OUTPUT);
+  digitalWrite(8, HIGH);
 }
 
 void loop() {
-  CRGB c1_e = CRGB(random(0, 255), random(0, 160), random(0, 160));
-  CRGB c2_e = CRGB(random(0, 160), random(0, 255), random(0, 160));
-  CRGB c3_e = CRGB(random(0, 160), random(0, 160), random(0, 255));
-  CRGB c1, c2;
+  c1_e = CRGB(random(0, 255), random(0, 220), random(0, 220));
+  c2_e = CRGB(random(0, 220), random(0, 255), random(0, 220));
+  c3_e = CRGB(random(0, 220), random(0, 220), random(0, 255));
 
   for (uint8_t fade = 0; fade < 255; fade++) {
     for (uint16_t i = 0; i < NUM_LEDS_PER_STRIP; i++) {
@@ -61,11 +70,6 @@ void loop() {
 
       for (uint8_t s = 0; s < NUM_STRIPS; s++) {
         uint16_t loc = (i + offset) % NUM_LEDS_PER_STRIP;
-        /*if (s % 2 == 8) {
-          loc = (i + offset) % NUM_LEDS_PER_STRIP;
-        } else {
-          loc = NUM_LEDS_PER_STRIP - ((i + offset) % NUM_LEDS_PER_STRIP);
-        }*/
 
         if (strip[s]) {
           strip[s]->setPixelColor(loc,
